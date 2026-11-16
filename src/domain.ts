@@ -30,10 +30,17 @@ export function effectiveStatus(account: Account, today = new Date()) {
   return due < today ? 'ATRASADO' : 'PENDENTE'
 }
 
-export function summarize(accounts: Account[]) {
+export function summarize(accounts: Account[], period: 'month' | 'previous' | 'all' = 'month', today = new Date()) {
   const active = accounts.filter((account) => !account.deleted_at)
   const open = active.filter((account) => account.status !== 'PAGO')
-  const paid = active.filter((account) => account.status === 'PAGO')
+  const start = new Date(today.getFullYear(), today.getMonth() + (period === 'previous' ? -1 : 0), 1)
+  const end = new Date(today.getFullYear(), today.getMonth() + (period === 'previous' ? 0 : 1), 1)
+  const paid = active.filter((account) => {
+    if (account.status !== 'PAGO') return false
+    if (period === 'all') return true
+    const paidAt = account.pago_em ? new Date(account.pago_em) : null
+    return Boolean(paidAt && paidAt >= start && paidAt < end)
+  })
   return {
     toPay: open.filter((a) => a.direcao === 'PAGAR').reduce((sum, a) => sum + a.valor_centavos, 0),
     toReceive: open.filter((a) => a.direcao === 'RECEBER').reduce((sum, a) => sum + a.valor_centavos, 0),
