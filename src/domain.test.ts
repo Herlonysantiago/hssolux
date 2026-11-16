@@ -10,6 +10,6 @@ describe('permissões compartilhadas', () => {
 })
 describe('regras financeiras', () => {
   it('interpreta valores brasileiros', () => { expect(parseMoney('R$ 1.234,56')).toBe(123456) })
-  it('separa pagar, receber e pago sem incluir lixeira', () => { const result = summarize([account({}), account({ id: '2', direcao: 'RECEBER', valor_centavos: 5000 }), account({ id: '3', status: 'PAGO', valor_centavos: 3000 }), account({ id: '4', deleted_at: '2026-01-01', valor_centavos: 9000 })]); expect(result.toPay).toBe(10000); expect(result.toReceive).toBe(5000); expect(result.paid).toBe(3000) })
+  it('separa pagar, receber e pago sem incluir lixeira', () => { const result = summarize([account({}), account({ id: '2', direcao: 'RECEBER', valor_centavos: 5000 }), account({ id: '3', status: 'PAGO', valor_centavos: 3000, pago_em: new Date().toISOString() }), account({ id: '4', deleted_at: '2026-01-01', valor_centavos: 9000 })]); expect(result.toPay).toBe(10000); expect(result.toReceive).toBe(5000); expect(result.paid).toBe(3000) })
 })
 
