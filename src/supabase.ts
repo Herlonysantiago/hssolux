@@ -66,6 +66,38 @@ export async function loadSpaceMembers(spaceId: string) {
   return data ?? []
 }
 
+export async function loadSpaceAccess(spaceId: string) {
+  if (!supabase) return { members: [], invites: [] }
+  const [{ data: members, error: membersError }, { data: invites, error: invitesError }] = await Promise.all([
+    supabase.from('space_members').select('user_id,role,created_at').eq('space_id', spaceId),
+    supabase.from('space_invites').select('id,email,role,status,expires_at').eq('space_id', spaceId).eq('status', 'PENDING'),
+  ])
+  if (membersError) throw membersError
+  if (invitesError) throw invitesError
+  const ids = (members ?? []).map((member) => member.user_id)
+  const { data: profiles } = ids.length ? await supabase.from('profiles').select('id,nome').in('id', ids) : { data: [] }
+  const names = new Map((profiles ?? []).map((profile) => [profile.id, profile.nome || 'Integrante']))
+  return { members: (members ?? []).map((member) => ({ ...member, name: names.get(member.user_id) || 'Integrante' })), invites: invites ?? [] }
+}
+
+export async function inviteToSpace(spaceId: string, email: string, role: 'ADMIN' | 'EDITOR' | 'VIEWER', invitedBy: string) {
+  if (!supabase) throw new Error('Supabase não configurado.')
+  const { error } = await supabase.from('space_invites').insert({ space_id: spaceId, email: email.trim().toLowerCase(), role, invited_by: invitedBy })
+  if (error) throw error
+}
+
+export async function changeMemberRole(spaceId: string, userId: string, role: 'ADMIN' | 'EDITOR' | 'VIEWER') {
+  if (!supabase) throw new Error('Supabase não configurado.')
+  const { error } = await supabase.from('space_members').update({ role }).eq('space_id', spaceId).eq('user_id', userId)
+  if (error) throw error
+}
+
+export async function removeSpaceMember(spaceId: string, userId: string) {
+  if (!supabase) throw new Error('Supabase não configurado.')
+  const { error } = await supabase.from('space_members').delete().eq('space_id', spaceId).eq('user_id', userId)
+  if (error) throw error
+}
+
 export async function saveAccount(spaceId: string, draft: AccountDraft, accountId?: string) {
   if (!supabase) throw new Error('Supabase não configurado.')
   const payload = {
