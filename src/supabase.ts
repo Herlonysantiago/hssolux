@@ -52,6 +52,20 @@ export async function loadAccounts(spaceId: string) {
   return (data ?? []) as Account[]
 }
 
+export async function createSpace(nome: string, tipo: 'PESSOAL' | 'FAMILIA' | 'EMPRESA') {
+  if (!supabase) throw new Error('Supabase não configurado.')
+  const { data, error } = await supabase.rpc('create_space', { p_nome: nome, p_tipo: tipo, p_icone: 'wallet', p_cor: '#0B3D6E' })
+  if (error) throw error
+  return data
+}
+
+export async function loadSpaceMembers(spaceId: string) {
+  if (!supabase) return []
+  const { data, error } = await supabase.from('space_members').select('user_id,role,created_at').eq('space_id', spaceId)
+  if (error) throw error
+  return data ?? []
+}
+
 export async function saveAccount(spaceId: string, draft: AccountDraft, accountId?: string) {
   if (!supabase) throw new Error('Supabase não configurado.')
   const payload = {
